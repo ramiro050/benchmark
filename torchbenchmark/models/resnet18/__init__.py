@@ -12,6 +12,12 @@ from torchbenchmark.tasks import COMPUTER_VISION
 #       USE `gen_torchvision_benchmarks.py`
 #
 #######################################################
+# TODO: Generalize the LTC enablement within run.py and torchbenmark/__init__.py for test.py and test_bench.py.
+import lazy_tensor_core
+lazy_tensor_core._LAZYC._ltc_init_ts_backend()
+import lazy_tensor_core.debug.metrics as metrics
+import lazy_tensor_core.core.lazy_model as ltm
+
 class Model(BenchmarkModel):
     task = COMPUTER_VISION.CLASSIFICATION
     optimized_for_inference = True
@@ -54,6 +60,8 @@ class Model(BenchmarkModel):
             y = torch.empty(pred.shape[0], dtype=torch.long, device=self.device).random_(pred.shape[1])
             loss(pred, y).backward()
             optimizer.step()
+            if self.device == 'lazy':
+                ltm.mark_step()
 
     def eval(self, niter=1):
         model = self.eval_model
